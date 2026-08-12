@@ -1,0 +1,8 @@
+data/cache/
+data/yearly/
+*.nc
+*.grib
+*.grib2
+*.idx
+__pycache__/
+*.pyc
