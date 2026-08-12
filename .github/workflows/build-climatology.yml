@@ -1,0 +1,53 @@
+name: Build Belgian ERA5 climatology
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  years:
+    name: ERA5 Belgium ${{ matrix.year }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        year: [1961,1962,1963,1964,1965,1966,1967,1968,1969,1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
+      - name: Configure CDS API
+        env:
+          CDS_API_URL: ${{ secrets.CDS_API_URL }}
+          CDS_API_KEY: ${{ secrets.CDS_API_KEY }}
+        run: |
+          test -n "$CDS_API_URL" && test -n "$CDS_API_KEY"
+          echo "url: $CDS_API_URL" > "$HOME/.cdsapirc"
+          echo "key: $CDS_API_KEY" >> "$HOME/.cdsapirc"
+      - run: python scripts/download_historical_year.py --year "${{ matrix.year }}" --output "belgium_${{ matrix.year }}.csv"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: belgium-${{ matrix.year }}
+          path: belgium_${{ matrix.year }}.csv
+          retention-days: 7
+  merge:
+    needs: years
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with: {pattern: "belgium-*", path: yearly-data}
+      - run: python scripts/merge_climatology.py
+      - run: |
+          git config user.name "climate-data-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/climatology_belgium_1961_1990.csv
+          git commit -m "Build Belgian ERA5 climatology" || exit 0
+          git pull --rebase
+          git push
