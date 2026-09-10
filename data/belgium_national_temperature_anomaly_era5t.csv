@@ -246,3 +246,4 @@ date,belgium_mean_daily_max_c,historic_norm_c,anomaly_c,status,weighting,grid_po
 2026-09-02,14.35,19.03,-4.68,era5t,cosine_latitude,61
 2026-09-03,21.2,18.94,2.26,era5t,cosine_latitude,61
 2026-09-04,23.13,18.85,4.28,era5t,cosine_latitude,61
+2026-09-05,19.77,18.76,1.01,era5t,cosine_latitude,61
